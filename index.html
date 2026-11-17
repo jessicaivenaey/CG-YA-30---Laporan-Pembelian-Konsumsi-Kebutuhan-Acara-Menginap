@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Form Laporan Pembelian</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; max-width: 450px; width: 100%; margin: 15px auto; padding: 15px; background: #f4f6f8; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        h2 { color: #333; text-align: center; font-size: 20px; }
+        .item-row { display: flex; gap: 6px; margin-bottom: 10px; align-items: center; width: 100%; }
+        input[type="text"], input[type="file"] { padding: 10px; font-size: 14px; border: 1px solid #ccc; border-radius: 6px; width: 100%; outline: none; background: #fff; }
+        .itemName { flex: 2; min-width: 0; }
+        .itemPrice { flex: 1.5; min-width: 0; }
+        button { padding: 10px 12px; cursor: pointer; background: #28a745; color: white; border: none; border-radius: 6px; font-weight: bold; flex-shrink: 0; }
+        button.remove { background: #dc3545; }
+        .btn-add { background: #007bff; width: 100%; margin-top: 5px; }
+        .btn-submit { background: #25d366; width: 100%; margin-top: 20px; font-size: 16px; }
+        label { font-weight: bold; display: block; margin-top: 12px; margin-bottom: 5px; color: #555; font-size: 14px; }
+        .file-info { font-size: 12px; color: #666; margin-top: 4px; }
+    </style>
+</head>
+<body>
+
+    <h2>Form Laporan Pembelian</h2>
+    
+    <label>Nama Pemesan:</label>
+    <input type="text" id="buyerName" placeholder="Ketik nama pembeli...">
+
+    <label>Daftar Barang & Harga:</label>
+    <div id="itemsContainer">
+        <div class="item-row">
+            <input type="text" class="itemName" placeholder="Nama barang...">
+            <input type="text" class="itemPrice" placeholder="Harga (Rp)" oninput="formatRupiah(this)">
+            <button class="remove" type="button" onclick="removeItem(this)">X</button>
+        </div>
+    </div>
+
+    <button class="btn-add" type="button" onclick="addItem()">+ Tambah Barang Lagi</button>
+
+    <label>Upload Foto Struk / Bon (Bisa banyak):</label>
+    <input type="file" id="receiptFile" accept="image/*" multiple>
+    <div class="file-info">*Pilih foto bon/struk belanja dari HP kamu.</div>
+
+    <button class="btn-submit" type="button" onclick="sendToWhatsApp()">Kirim Pesanan ke WhatsApp</button>
+
+    <script>
+        // Fungsi untuk otomatis format titik ribuan saat diketik
+        function formatRupiah(input) {
+            let angka = input.value.replace(/[^,\d]/g, '').toString();
+            let split = angka.split(',');
+            let sisa = split[0].length % 3;
+            let rupiah = split[0].substr(0, sisa);
+            let ribuan = split[0].substr(sisa).match(/\d{3}/gi);
+
+            if (ribuan) {
+                let separator = sisa ? '.' : '';
+                rupiah += separator + ribuan.join('.');
+            }
+
+            rupiah = split[1] != undefined ? rupiah + ',' + split[1] : rupiah;
+            input.value = rupiah;
+        }
+
+        function addItem() {
+            const container = document.getElementById('itemsContainer');
+            const row = document.createElement('div');
+            row.className = 'item-row';
+            row.innerHTML = `
+                <input type="text" class="itemName" placeholder="Nama barang...">
+                <input type="text" class="itemPrice" placeholder="Harga (Rp)" oninput="formatRupiah(this)">
+                <button class="remove" type="button" onclick="removeItem(this)">X</button>
+            `;
+            container.appendChild(row);
+        }
+
+        function removeItem(button) {
+            const rows = document.getElementsByClassName('item-row');
+            if (rows.length > 1) {
+                button.parentElement.remove();
+            } else {
+                alert("Minimal harus ada 1 barang dalam pesanan!");
+            }
+        }
+
+        function sendToWhatsApp() {
+            const name = document.getElementById('buyerName').value.trim();
+            if (!name) {
+                alert("Mohon masukkan nama pemesan terlebih dahulu!");
+                return;
+            }
+
+            const names = document.getElementsByClassName('itemName');
+            const prices = document.getElementsByClassName('itemPrice');
+            const fileInput = document.getElementById('receiptFile');
+            
+            let total = 0;
+            let message = `*LAPORAN PEMBELIAN KONSUMSI*\n\n` +
+                          `*Nama Pemesan:* ${name}\n\n` +
+                          `*Daftar Barang:*`;
+
+            for (let i = 0; i < names.length; i++) {
+                const itemName = names[i].value.trim();
+                // Bersihkan titik dari input sebelum dihitung totalnya
+                const rawPrice = prices[i].value.replace(/\./g, '');
+                const itemPrice = parseFloat(rawPrice) || 0;
+                
+                if (itemName) {
+                    message += `\n- ${itemName} : Rp ${itemPrice.toLocaleString('id-ID')}`;
+                    total += itemPrice;
+                }
+            }
+
+            if (total === 0) {
+                alert("Mohon isi minimal satu nama barang dan harganya!");
+                return;
+            }
+
+            message += `\n\n*Total Belanja:* *Rp ${total.toLocaleString('id-ID')}*`;
+
+            if (fileInput.files.length > 0) {
+                message += `\n\n*(Catatan: ${fileInput.files.length} foto struk telah dipilih di form, silakan kirim foto tersebut di chat ini)*`;
+            }
+
+            // ---> GANTI NOMOR DI BAWAH DENGAN NOMOR WHATSAPP KAMU (Awali 62 tanpa angka 0) <---
+            const waNumber = "6281234567890"; 
+            
+            const encodedMessage = encodeURIComponent(message);
+            window.open(`https://wa.me/${6281320471924}?text=${encodedMessage}`, '_blank');
+        }
+    </script>
+
+</body>
+</html>
